@@ -26,7 +26,7 @@ public class App implements OutputService {
     private int flags;
 
     /**
-     *
+     * Application class constructor.
      * @param args - runtime arguments that must contain:
      *             [0] - url address or file path
      *             [1] - words for search separated by commas.
