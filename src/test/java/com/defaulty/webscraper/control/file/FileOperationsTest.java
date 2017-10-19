@@ -9,12 +9,6 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 public class FileOperationsTest {
-    @Test
-    public void isURIPath() throws Exception {
-        assertTrue(FileOperations.isURIPath("https://translate.google.ru/#en/ru/Ignore%20charset%20Directive"));
-        assertTrue(FileOperations.isURIPath("https://github.com/0xFaulty/"));
-        assertTrue(FileOperations.isURIPath("http://www.oracle.com/technetwork/java/index.htm"));
-    }
 
     @Ignore
     public void readFileIntoList() throws Exception {

@@ -1,15 +1,19 @@
 package com.defaulty.webscraper;
 
-import com.defaulty.webscraper.control.file.FileOperations;
 import com.defaulty.webscraper.control.OutputService;
+import com.defaulty.webscraper.control.file.FileOperations;
 import com.defaulty.webscraper.control.task.*;
 
 import java.nio.file.NoSuchFileException;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
- * Hello world!
+ * @author 0xFaulty
+ * @version 0.1
  */
 public class App implements OutputService {
 
@@ -21,15 +25,30 @@ public class App implements OutputService {
     private int TaskCount;
     private int flags;
 
-    private App(String[] args) {
+    /**
+     *
+     * @param args - runtime arguments that must contain:
+     *             [0] - url address or file path
+     *             [1] - words for search separated by commas.
+     *             Also, possible flags:
+     *             	-v --Count data get and data process time in ms.
+     *             	-w --Count number of provided word(s) occurrence on webpage(s).
+     *             	-c --Count number of characters of each web page.
+     *             	-e --Printing sentences’ which contain given words.
+     */
+    public App(String[] args) {
         this.args = args;
     }
 
+    /**
+     * Parse received arguments and send it to run in ExecutorService threads pool.
+     */
     private void process() {
         if (args.length > 1) {
             try {
                 List<String> uriList = new ArrayList<>();
-                if (FileOperations.isURIPath(args[0]))
+
+                if (args[0].startsWith("http:") || args[0].startsWith("https:"))
                     uriList.add(args[0]);
                 else
                     uriList = FileOperations.readFileIntoList(args[0]);
@@ -43,18 +62,17 @@ public class App implements OutputService {
                     if (args[i].equals("-e")) flags |= TaskFlags.E.getValue();
                 }
 
+                scrubTotal = new ScrubTotalImpl(uriList, wordList, flags);
+
                 for (String uri : uriList) {
-                    ScrubTask task = new ScrubTaskImpl(uri, wordList, this);
-                    task.setFlags(flags);
+                    ScrubTask task = new ScrubTaskImpl(uri, wordList, this, flags);
                     service.execute(task);
                     TaskCount++;
                 }
 
                 service.shutdown();
 
-                scrubTotal = new ScrubTotalImpl(wordList, uriList);
-                scrubTotal.setFlags(flags);
-            } catch (NoSuchFileException e){
+            } catch (NoSuchFileException e) {
                 System.out.println("Error: " + args[0] + " not found.");
             } catch (Exception e) {
                 e.printStackTrace();
@@ -65,15 +83,24 @@ public class App implements OutputService {
 
     }
 
+    /**
+     * Point for return result from tasks after processing.
+     * Printing result information for each task and in total.
+     * @param task - scrub task returned after processing.
+     */
     @Override
     public synchronized void returnTask(ScrubTask task) {
         finishTaskList.add(task);
-        System.out.println(task.toString());
+        System.out.println(scrubTotal.TaskToString(task));
         scrubTotal.addToTotal(task);
         if (finishTaskList.size() == TaskCount)
-            System.out.println(scrubTotal.toString());
+            System.out.println(scrubTotal.getTotal());
     }
 
+    /**
+     * Application start point.
+     * @param args - runtime arguments, described in {@code App} constructor.
+     */
     public static void main(String[] args) {
         App app = new App(args);
         app.process();
